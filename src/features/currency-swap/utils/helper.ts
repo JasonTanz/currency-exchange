@@ -1,3 +1,5 @@
+import { MIN_EXCHANGEABLE_AMOUNT } from './constant';
+
 export const formatWithCommas = (value: string): string => {
   if (!value) return "";
   const [integerPart, decimalPart] = value.split(".");
@@ -33,3 +35,4 @@ export const formatOutputAmmount = (value: number): string => {
     ? value.toString()
     : value.toFixed(6).replace(/\.?0+$/, "");
 };
+

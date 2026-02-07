@@ -100,7 +100,6 @@ export const CurrencyTextField: React.FC<Props> = (props) => {
 
     const targetCount = countValueChars(raw.slice(0, selectionStart));
     const nextDisplayValue = formatWithCommas(nextValue);
-    console.log('nextDisplayValue', nextDisplayValue);
     pendingCaretRef.current = getCaretPosition(nextDisplayValue, targetCount);
 
     onChange(nextValue);

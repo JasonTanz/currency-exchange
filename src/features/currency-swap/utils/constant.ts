@@ -14,3 +14,7 @@ export const CURRENCY_RATE = {
 export const CURRENCY_OPTIONS = Object.keys(CURRENCY_RATE);
 
 export const FEE_PERCENT = 1;
+
+export const MIN_EXCHANGEABLE_AMOUNT = 0.000001;
+
+export const MAX_INTEGER_DIGITS = 17;

@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { formatOutputAmmount } from "../utils/helper";
 import debounce from 'debounce';
+import { MIN_EXCHANGEABLE_AMOUNT, MAX_INTEGER_DIGITS } from '../utils/constant';
+
 
 interface CurrencyState {
   from: {
@@ -26,9 +28,14 @@ interface UseSwapCurrencyArgs {
   currencyOptions: string[];
 }
 
+export type CurrencySwapError = {
+  message: string;
+  field: 'from_amount' | 'to_amount';
+}
+
 interface UseSwapCurrencyReturn {
   fee: string;
-  error: string | null;
+  error: CurrencySwapError[];
   toCurrency: CurrencyState['to'];
   currentRate: number | null;
   fromCurrency: CurrencyState['from'];
@@ -43,7 +50,7 @@ interface UseSwapCurrencyReturn {
   isFromAmountCalculating: boolean;
 }
 
-export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyReturn {
+export function useCurrencySwap(args: UseSwapCurrencyArgs): UseSwapCurrencyReturn {
   const {
     rates,
     feePercent,
@@ -58,7 +65,6 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     from: { currency: initialFromCurrency, amount: "" },
     to: { currency: initialToCurrency, amount: "" },
   });
-  const [error, setError] = useState<string | null>(null);
   const [isFromAmountCalculating, setIsFromAmountCalculating] = useState(false);
   const [isToAmountCalculating, setIsToAmountCalculating] = useState(false);
 
@@ -88,6 +94,43 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
   const output = Number(toCurrency.amount || 0)
   const fee = formatOutputAmmount(output * feeRate);
   const receiveAmount = formatOutputAmmount(output - Number(fee));
+
+  // =============== MEMO
+  const error = useMemo<CurrencySwapError[]>(() => {
+    const rawFromAmount = currency.from.amount;
+    const rawToAmount = currency.to.amount;
+    const fromAmount = Number(rawFromAmount);
+    const toAmount = Number(rawToAmount);
+
+    const errors: CurrencySwapError[] = [];
+
+    // Get integer part length (before decimal point)
+    const fromIntegerLength = rawFromAmount.split('.')[0].length;
+    const toIntegerLength = rawToAmount.split('.')[0].length;
+
+    // Check if amount is too large
+    if (rawFromAmount !== '' && fromIntegerLength > MAX_INTEGER_DIGITS) {
+      errors.push({ message: 'Amount too large', field: "from_amount" });
+    }
+
+    if (rawToAmount !== '' && toIntegerLength > MAX_INTEGER_DIGITS) {
+      errors.push({ message: 'Amount too large', field: "to_amount" });
+    }
+
+    // Check minimum amount (only if not already too large)
+    if (rawFromAmount !== '' && fromIntegerLength <= MAX_INTEGER_DIGITS && fromAmount < MIN_EXCHANGEABLE_AMOUNT) {
+      errors.push({ message: `Minimum amount is ${MIN_EXCHANGEABLE_AMOUNT}`, field: "from_amount" });
+    }
+
+    if (rawToAmount !== '' && toIntegerLength <= MAX_INTEGER_DIGITS && toAmount < MIN_EXCHANGEABLE_AMOUNT) {
+      errors.push({ message: 'Amount to receive is too low', field: "to_amount" });
+    }
+
+    return errors;
+  }, [
+    currency.from.amount,
+    currency.to.amount,
+  ]);
 
   // =============== HELPERS
   const computeToAmount = useCallback((
@@ -170,7 +213,6 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
         : prev.to.currency;
       const toAmount = computeToAmount(prev.from.amount, currency, newCurrency);
       if (toAmount === null) {
-        setError("Rate not available");
         return {
           ...prev,
           from: { ...prev.from, currency },
@@ -192,7 +234,6 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
   };
 
   const onToCurrencyChange = (currency: string) => {
-    console.log("currency", currency);
     setCurrency((prev) => {
       const isCurrencySame = currency === prev.from.currency;
       const newCurrency = isCurrencySame
@@ -200,7 +241,6 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
         : prev.from.currency;
       const toAmount = computeToAmount(prev.from.amount, newCurrency, currency);
       if (toAmount === null) {
-        setError("Rate not available");
         return {
           ...prev,
           to: { ...prev.to, currency },
@@ -233,7 +273,6 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
       );
 
       if (newToAmount === null) {
-        setError("Rate not available");
         return prev;
       }
 
@@ -242,7 +281,7 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
         to: { currency: newToCurrency, amount: newToAmount },
       };
     });
-  }, [setCurrency, setError, computeToAmount]);
+  }, [setCurrency, computeToAmount]);
 
   const onHandleExchange = () => {
     onSwapSuccessCallback?.();

@@ -8,7 +8,7 @@ import { CurrencySwapButton } from '@/features/currency-swap/components/Currency
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/common/dialog';
 import { Button } from '@/components/common/button';
 import { CURRENCY_OPTIONS, CURRENCY_RATE, FEE_PERCENT } from '@/features/currency-swap/utils/constant';
-import { useSwapCurrency } from '../hooks/useCurrencySwap';
+import { useCurrencySwap } from '../hooks/useCurrencySwap';
 import { cn } from '@/lib/utils';
 
 const getInitialCurrency = (param: string | null, fallback: string): string => {
@@ -18,15 +18,13 @@ const getInitialCurrency = (param: string | null, fallback: string): string => {
   return fallback;
 };
 
-// @TODO
-export type Props = Record<string, never>
 
 /**
 * ===========================
 * MAIN
 * ===========================
 */
-export const CurrencySwapContainer: React.FC<Props> = () => {
+export const CurrencySwapContainer = () => {
   // =============== HOOKS
   const searchParams = useSearchParams();
   const initialFrom = getInitialCurrency(searchParams.get('from'), 'MYR');
@@ -34,6 +32,7 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
 
   const {
     fee,
+    error,
     toCurrency,
     currentRate,
     fromCurrency,
@@ -46,7 +45,7 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
     onHandleExchange,
     isToAmountCalculating,
     isFromAmountCalculating,
-  } = useSwapCurrency({
+  } = useCurrencySwap({
     feePercent: FEE_PERCENT,
     initialFromCurrency: initialFrom,
     initialToCurrency: initialTo,
@@ -57,11 +56,14 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
     }
   });
 
+
   // =============== STATE
   const [showSuccess, setShowSuccess] = useState(false);
 
   // =============== VARIABLES
-  const disabled = !fromCurrency.amount || !toCurrency.amount || Number(fromCurrency.amount) === 0 || Number(toCurrency.amount) === 0;
+  const fromError = error.find(err => err.field === 'from_amount');
+  const toError = error.find(err => err.field === 'to_amount');
+  const disabled = !fromCurrency.amount || !toCurrency.amount || Number(fromCurrency.amount) === 0 || Number(toCurrency.amount) === 0 || !!error;
 
   const inputBoxStyles = cn(
     'rounded-xl border border-white/10 p-4 transition-all duration-200',
@@ -71,33 +73,40 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
   // =============== RENDER
   const renderCurrencyInput = () => {
     return (
-      <div className="relative flex flex-col gap-2">
-        <div className={cn(inputBoxStyles, 'bg-panel-raised')}>
-          <CurrencyInput
-            label="From"
-            selectedCurrency={fromCurrency.currency}
-            onSelectCurrency={onFromCurrencyChange}
-            amount={fromCurrency.amount}
-            onAmountChange={onFromAmountChange}
-            currencyOptions={CURRENCY_OPTIONS}
-            isLoading={isFromAmountCalculating}
-          />
+      <>
+        <div className="relative flex flex-col gap-2">
+          <div className={cn(inputBoxStyles, 'bg-panel-raised')}>
+            <CurrencyInput
+              label="From"
+              selectedCurrency={fromCurrency.currency}
+              onSelectCurrency={onFromCurrencyChange}
+              amount={fromCurrency.amount}
+              onAmountChange={onFromAmountChange}
+              currencyOptions={CURRENCY_OPTIONS}
+              isLoading={isFromAmountCalculating}
+            />
+          </div>
+          <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+            <CurrencySwapButton onSwap={onHandleSwap} />
+          </div>
+          <div className={cn(inputBoxStyles, 'bg-panel')}>
+            <CurrencyInput
+              label="To"
+              selectedCurrency={toCurrency.currency}
+              onSelectCurrency={onToCurrencyChange}
+              amount={toCurrency.amount}
+              onAmountChange={onToAmountChange}
+              currencyOptions={CURRENCY_OPTIONS}
+              isLoading={isToAmountCalculating}
+            />
+          </div>
         </div>
-        <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-          <CurrencySwapButton onSwap={onHandleSwap} />
-        </div>
-        <div className={cn(inputBoxStyles, 'bg-panel')}>
-          <CurrencyInput
-            label="To"
-            selectedCurrency={toCurrency.currency}
-            onSelectCurrency={onToCurrencyChange}
-            amount={toCurrency.amount}
-            onAmountChange={onToAmountChange}
-            currencyOptions={CURRENCY_OPTIONS}
-            isLoading={isToAmountCalculating}
-          />
-        </div>
-      </div>
+        {(fromError || toError) && (
+          <p className="text-xs text-right text-red-400 mt-4">
+            {fromError?.message || toError?.message}
+          </p>
+        )}
+      </>
     )
   }
 
