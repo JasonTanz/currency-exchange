@@ -63,7 +63,7 @@ export const CurrencySwapContainer = () => {
   // =============== VARIABLES
   const fromError = error.find(err => err.field === 'from_amount');
   const toError = error.find(err => err.field === 'to_amount');
-  const disabled = !fromCurrency.amount || !toCurrency.amount || Number(fromCurrency.amount) === 0 || Number(toCurrency.amount) === 0 || !!error;
+  const disabled = !fromCurrency.amount || !toCurrency.amount || Number(fromCurrency.amount) === 0 || Number(toCurrency.amount) === 0 || error.length > 0;
 
   const inputBoxStyles = cn(
     'rounded-xl border border-white/10 p-4 transition-all duration-200',
@@ -163,10 +163,10 @@ export const CurrencySwapContainer = () => {
               rate={currentRate}
             />
             <p className="text-sm text-white/60">
-              Fee ({FEE_PERCENT}%): {fee || "0"} {toCurrency.currency}
+              Fee ({FEE_PERCENT}%): {error.length > 0 ? "-" : (fee || "0")} {toCurrency.currency}
             </p>
             <p className="text-sm text-white/60">
-              You Receive: {receiveAmount || "0"} {toCurrency.currency}
+              You Receive: {error.length > 0 ? "-" : (receiveAmount || "0")} {toCurrency.currency}
             </p>
           </div>
           <Button className="mt-4" onClick={onHandleExchange} disabled={disabled}>
