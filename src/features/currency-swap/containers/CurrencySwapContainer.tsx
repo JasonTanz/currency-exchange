@@ -6,6 +6,7 @@ import { CurrencyInput } from '@/features/currency-swap/components/CurrencyInput
 import { ConversionDisplay } from '@/features/currency-swap/components/ConversionDisplay';
 import { CurrencySwapButton } from '@/features/currency-swap/components/CurrencySwapButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/common/dialog';
+import { Button } from '@/components/common/button';
 import { CURRENCY_OPTIONS, CURRENCY_RATE, FEE_PERCENT } from '@/features/currency-swap/utils/constant';
 import { useSwapCurrency } from '../hooks/useCurrencySwap';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,8 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
     onHandleSwap,
     onToCurrencyChange,
     onHandleExchange,
+    isToAmountCalculating,
+    isFromAmountCalculating,
   } = useSwapCurrency({
     feePercent: FEE_PERCENT,
     initialFromCurrency: initialFrom,
@@ -77,6 +80,7 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
             amount={fromCurrency.amount}
             onAmountChange={onFromAmountChange}
             currencyOptions={CURRENCY_OPTIONS}
+            isLoading={isFromAmountCalculating}
           />
         </div>
         <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -90,6 +94,7 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
             amount={toCurrency.amount}
             onAmountChange={onToAmountChange}
             currencyOptions={CURRENCY_OPTIONS}
+            isLoading={isToAmountCalculating}
           />
         </div>
       </div>
@@ -124,16 +129,9 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            className={cn(
-              'mt-6 w-full rounded-xl bg-primary py-3 text-center text-base font-semibold text-accent-foreground shadow hover:bg-primary-hover cursor-pointer',
-              'disabled:bg-primary/30 disabled:cursor-not-allowed '
-            )}
-            onClick={() => setShowSuccess(false)}
-          >
+          <Button className="mt-6" onClick={() => setShowSuccess(false)}>
             Done
-          </button>
+          </Button>
         </DialogContent>
       </Dialog>
     )
@@ -162,17 +160,9 @@ export const CurrencySwapContainer: React.FC<Props> = () => {
               You Receive: {receiveAmount || "0"} {toCurrency.currency}
             </p>
           </div>
-          <button
-            type="button"
-            className={cn(
-              'mt-4 w-full rounded-xl bg-primary py-3 text-center text-base font-semibold text-accent-foreground shadow hover:bg-primary-hover cursor-pointer',
-              'disabled:bg-primary/30 disabled:cursor-not-allowed '
-            )}
-            onClick={onHandleExchange}
-            disabled={disabled}
-          >
+          <Button className="mt-4" onClick={onHandleExchange} disabled={disabled}>
             Exchange
-          </button>
+          </Button>
         </div>
       </div>
       {renderSuccessDialog()}

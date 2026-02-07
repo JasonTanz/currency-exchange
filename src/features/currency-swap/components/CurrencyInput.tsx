@@ -15,6 +15,7 @@ export type Props = {
   amount: string;
   onAmountChange: (amount: string) => void;
   currencyOptions: string[];
+  isLoading?: boolean;
 };
 
 /**
@@ -30,7 +31,21 @@ export const CurrencyInput: React.FC<Props> = (props) => {
     amount,
     onAmountChange,
     currencyOptions,
+    isLoading = false,
   } = props;
+
+  const renderField = () => {
+    if (isLoading) return <div className="h-9 w-24 animate-pulse rounded-md bg-white/10" />
+    return (
+      <CurrencyTextField
+        value={amount}
+        onChange={onAmountChange}
+        placeholder="0.00"
+        size="md"
+        className="placeholder:text-white/25"
+      />
+    )
+  }
 
   // =============== VIEWS
   return (
@@ -53,13 +68,7 @@ export const CurrencyInput: React.FC<Props> = (props) => {
           </SelectContent>
         </Select>
         <div className="flex min-w-0 flex-col items-end gap-1 overflow-hidden">
-          <CurrencyTextField
-            value={amount}
-            onChange={onAmountChange}
-            placeholder="0.00"
-            size="md"
-            className="placeholder:text-white/25"
-          />
+          {renderField()}
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { formatOutputAmmount } from "../utils/helper";
+import debounce from 'debounce';
 
 interface CurrencyState {
   from: {
@@ -38,6 +39,8 @@ interface UseSwapCurrencyReturn {
   onFromAmountChange: (val: string) => void;
   onToCurrencyChange: (currency: string) => void;
   onFromCurrencyChange: (currency: string) => void;
+  isToAmountCalculating: boolean;
+  isFromAmountCalculating: boolean;
 }
 
 export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyReturn {
@@ -56,6 +59,8 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     to: { currency: initialToCurrency, amount: "" },
   });
   const [error, setError] = useState<string | null>(null);
+  const [isFromAmountCalculating, setIsFromAmountCalculating] = useState(false);
+  const [isToAmountCalculating, setIsToAmountCalculating] = useState(false);
 
   // =============== HELPERS
   const getFallbackCurrency = (excludeCurrency: string): string => {
@@ -96,7 +101,7 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     return formatOutputAmmount(fromAmountNumber * rate);
   }, [getRate]);
 
-  const computeFromAmount = (
+  const computeFromAmount = useCallback((
     toAmount: string,
     fromCurrency: string,
     toCurrency: string
@@ -105,7 +110,26 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     const rate = getRate(fromCurrency, toCurrency);
     if (!rate) return null;
     return formatOutputAmmount(toAmountNumber / rate);
-  };
+  }, [getRate]);
+
+  // =============== DEBOUNCE
+  const debouncedFromAmountCalculate = useMemo(() => debounce((val: string) => {
+    setCurrency(prev => {
+      const result = computeToAmount(val, prev.from.currency, prev.to.currency);
+      if (result === null) return prev;
+      return { ...prev, to: { ...prev.to, amount: result } };
+    });
+    setIsToAmountCalculating(false);
+  }, 300), [computeToAmount]);
+
+  const debouncedToAmountCalculate = useMemo(() => debounce((val: string) => {
+    setCurrency(prev => {
+      const result = computeFromAmount(val, prev.from.currency, prev.to.currency);
+      if (result === null) return prev;
+      return { ...prev, from: { ...prev.from, amount: result } };
+    });
+    setIsFromAmountCalculating(false);
+  }, 300), [computeFromAmount]);
 
   // =============== EFFECTS
   useEffect(() => {
@@ -115,50 +139,27 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     window.history.replaceState(null, "", url.toString());
   }, [fromCurrency.currency, toCurrency.currency]);
 
+  useEffect(() => {
+    return () => {
+      debouncedFromAmountCalculate.clear();
+      debouncedToAmountCalculate.clear();
+    };
+  }, [debouncedFromAmountCalculate, debouncedToAmountCalculate]);
+
   // =============== EVENTS
   const onFromAmountChange = (val: string) => {
-    setCurrency((prev) => {
-      const toAmount = computeToAmount(
-        val,
-        prev.from.currency,
-        prev.to.currency
-      );
-      if (toAmount === null) {
-        setError("Rate not available");
-        return {
-          ...prev,
-          from: { ...prev.from, amount: val },
-        };
-      }
-      console.log('toAmount', toAmount);
-      return {
-        from: { ...prev.from, amount: val },
-        to: { ...prev.to, amount: toAmount },
-      };
-    });
+    setCurrency(prev => ({ ...prev, from: { ...prev.from, amount: val } }))
+    setIsToAmountCalculating(true);
+
+    debouncedFromAmountCalculate(val);
   };
 
   const onToAmountChange = (val: string) => {
-    setCurrency((prev) => {
-      const fromAmount = computeFromAmount(
-        val,
-        prev.from.currency,
-        prev.to.currency
-      );
+    setCurrency(prev => ({ ...prev, to: { ...prev.to, amount: val } }))
+    setIsFromAmountCalculating(true);
 
-      if (fromAmount === null) {
-        setError("Rate not available");
-        return {
-          ...prev,
-          to: { ...prev.to, amount: val },
-        };
-      }
+    debouncedToAmountCalculate(val);
 
-      return {
-        from: { ...prev.from, amount: fromAmount },
-        to: { ...prev.to, amount: val },
-      };
-    });
   };
 
   const onFromCurrencyChange = (currency: string) => {
@@ -261,5 +262,7 @@ export function useSwapCurrency(args: UseSwapCurrencyArgs): UseSwapCurrencyRetur
     onFromAmountChange,
     onToCurrencyChange,
     onFromCurrencyChange,
+    isToAmountCalculating,
+    isFromAmountCalculating,
   };
 }
