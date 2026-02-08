@@ -1,7 +1,7 @@
 'use client';
 import { Input } from '@/components/common/input';
 import { cn } from '@/lib/utils';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { formatWithCommas, isValidNumericInput, isWithinDigitLimits } from '../utils/helper';
 
 type Size = 'sm' | 'md' | 'lg';
@@ -77,12 +77,8 @@ export const CurrencyTextField: React.FC<Props> = (props) => {
   } = props;
 
   // =============== REF
-  const mirrorSpanRef = useRef<HTMLSpanElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
-
-  // =============== STATE
-  const [inputWidth, setInputWidth] = useState<number>(0);
 
   // =============== VARIABLES
   const displayValue = formatWithCommas(String(value).replace(/,/g, ''));
@@ -105,12 +101,6 @@ export const CurrencyTextField: React.FC<Props> = (props) => {
     onChange(nextValue);
   };
 
-  // =============== EFFECTS
-  useLayoutEffect(() => {
-    if (mirrorSpanRef.current) {
-      setInputWidth(mirrorSpanRef.current.offsetWidth);
-    }
-  }, [displayValue, textSizeClass]);
 
   useLayoutEffect(() => {
     if (!inputRef.current) return;
@@ -124,17 +114,6 @@ export const CurrencyTextField: React.FC<Props> = (props) => {
   return (
     <div className="flex justify-center">
       <div className="inline-flex max-w-full items-center justify-center">
-        <span
-          ref={mirrorSpanRef}
-          aria-hidden="true"
-          className={cn(
-            'invisible absolute whitespace-pre px-3 py-1',
-            textSizeClass,
-            className,
-          )}
-        >
-          {displayValue || '0'}
-        </span>
         <Input
           ref={inputRef}
           {...rest}
@@ -142,10 +121,6 @@ export const CurrencyTextField: React.FC<Props> = (props) => {
           onChange={onHandleChange}
           inputMode="decimal"
           type="text"
-          style={{
-            width: inputWidth ? `${inputWidth}px` : undefined,
-            maxWidth: '100%',
-          }}
           className={cn(
             'min-w-0 text-right border-0 bg-transparent shadow-none text-white',
             'focus-visible:ring-0 focus-visible:border-transparent',

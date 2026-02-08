@@ -10,6 +10,7 @@ import { Button } from '@/components/common/button';
 import { CURRENCY_OPTIONS, CURRENCY_RATE, FEE_PERCENT } from '@/features/currency-swap/utils/constant';
 import { useCurrencySwap } from '../hooks/useCurrencySwap';
 import { cn } from '@/lib/utils';
+import { formatWithCommas } from '../utils/helper';
 
 const getInitialCurrency = (param: string | null, fallback: string): string => {
   if (param && CURRENCY_OPTIONS.includes(param)) {
@@ -127,14 +128,14 @@ export const CurrencySwapContainer = () => {
             <div className="flex justify-between text-sm">
               <span className="text-white/60">You Exchanged</span>
               <span className="font-medium text-white">
-                {fromCurrency.amount} {fromCurrency.currency}
+                {formatWithCommas(fromCurrency.amount)} {fromCurrency.currency}
               </span>
             </div>
             <div className="border-t border-white/10" />
             <div className="flex justify-between text-sm">
               <span className="text-white/60">You Received</span>
               <span className="font-medium text-primary">
-                {receiveAmount} {toCurrency.currency}
+                {formatWithCommas(receiveAmount)} {toCurrency.currency}
               </span>
             </div>
           </div>
@@ -163,10 +164,10 @@ export const CurrencySwapContainer = () => {
               rate={currentRate}
             />
             <p className="text-sm text-white/60">
-              Fee ({FEE_PERCENT}%): {error.length > 0 ? "-" : (fee || "0")} {toCurrency.currency}
+              Fee ({FEE_PERCENT}%): {error.length > 0 ? "-" : (formatWithCommas(fee) || "0")} {toCurrency.currency}
             </p>
             <p className="text-sm text-white/60">
-              You Receive: {error.length > 0 ? "-" : (receiveAmount || "0")} {toCurrency.currency}
+              You Receive: {error.length > 0 ? "-" : (formatWithCommas(receiveAmount) || "0")} {toCurrency.currency}
             </p>
           </div>
           <Button className="mt-4" onClick={onHandleExchange} disabled={disabled}>

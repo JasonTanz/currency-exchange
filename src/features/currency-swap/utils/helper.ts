@@ -1,4 +1,3 @@
-import { MIN_EXCHANGEABLE_AMOUNT } from './constant';
 
 export const formatWithCommas = (value: string): string => {
   if (!value) return "";
