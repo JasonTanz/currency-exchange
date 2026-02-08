@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
 import { CurrencyInput } from '@/features/currency-swap/components/CurrencyInput';
 import { ConversionDisplay } from '@/features/currency-swap/components/ConversionDisplay';
@@ -12,11 +11,23 @@ import { useCurrencySwap } from '../hooks/useCurrencySwap';
 import { cn } from '@/lib/utils';
 import { formatWithCommas } from '../utils/helper';
 
-const getInitialCurrency = (param: string | null, fallback: string): string => {
-  if (param && CURRENCY_OPTIONS.includes(param)) {
-    return param;
+const getInitialCurrencies = (
+  fromParam: string | undefined,
+  toParam: string | undefined
+): { from: string; to: string } => {
+  const defaultFrom = CURRENCY_OPTIONS[0];
+  const defaultTo = CURRENCY_OPTIONS[1];
+
+  const from = fromParam && CURRENCY_OPTIONS.includes(fromParam) ? fromParam : defaultFrom;
+  const to = toParam && CURRENCY_OPTIONS.includes(toParam) ? toParam : defaultTo;
+
+  // Ensure from and to are different
+  if (from === to) {
+    const differentCurrency = CURRENCY_OPTIONS.find((c) => c !== from);
+    return { from, to: differentCurrency ?? defaultTo };
   }
-  return fallback;
+
+  return { from, to };
 };
 
 
@@ -25,11 +36,16 @@ const getInitialCurrency = (param: string | null, fallback: string): string => {
 * MAIN
 * ===========================
 */
-export const CurrencySwapContainer = () => {
+export type Props = {
+  initialFrom?: string;
+  initialTo?: string;
+};
+
+export const CurrencySwapContainer: React.FC<Props> = (props) => {
+  const { initialFrom, initialTo } = props;
+
   // =============== HOOKS
-  const searchParams = useSearchParams();
-  const initialFrom = getInitialCurrency(searchParams.get('from'), 'MYR');
-  const initialTo = getInitialCurrency(searchParams.get('to'), 'EUR');
+  const { from: initialFromCurrency, to: initialToCurrency } = getInitialCurrencies(initialFrom, initialTo);
 
   const {
     fee,
@@ -48,8 +64,8 @@ export const CurrencySwapContainer = () => {
     isFromAmountCalculating,
   } = useCurrencySwap({
     feePercent: FEE_PERCENT,
-    initialFromCurrency: initialFrom,
-    initialToCurrency: initialTo,
+    initialFromCurrency,
+    initialToCurrency,
     rates: CURRENCY_RATE,
     currencyOptions: CURRENCY_OPTIONS,
     onSwapSuccessCallback: () => {
