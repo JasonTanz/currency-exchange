@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
 import { CurrencyInput } from '@/features/currency-swap/components/CurrencyInput';
 import { ConversionDisplay } from '@/features/currency-swap/components/ConversionDisplay';
@@ -25,11 +24,15 @@ const getInitialCurrency = (param: string | null, fallback: string): string => {
 * MAIN
 * ===========================
 */
-export const CurrencySwapContainer = () => {
+export type Props = {
+  initialFrom?: string;
+  initialTo?: string;
+};
+
+export const CurrencySwapContainer = ({ initialFrom, initialTo }: Props) => {
   // =============== HOOKS
-  const searchParams = useSearchParams();
-  const initialFrom = getInitialCurrency(searchParams.get('from'), 'MYR');
-  const initialTo = getInitialCurrency(searchParams.get('to'), 'EUR');
+  const initialFromCurrency = getInitialCurrency(initialFrom ?? null, 'MYR');
+  const initialToCurrency = getInitialCurrency(initialTo ?? null, 'EUR');
 
   const {
     fee,
@@ -48,8 +51,8 @@ export const CurrencySwapContainer = () => {
     isFromAmountCalculating,
   } = useCurrencySwap({
     feePercent: FEE_PERCENT,
-    initialFromCurrency: initialFrom,
-    initialToCurrency: initialTo,
+    initialFromCurrency,
+    initialToCurrency,
     rates: CURRENCY_RATE,
     currencyOptions: CURRENCY_OPTIONS,
     onSwapSuccessCallback: () => {
